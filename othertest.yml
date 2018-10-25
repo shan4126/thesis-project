@@ -1,0 +1,112 @@
+#####scaled schoenfeld residuals
+library(survival)
+fit<-coxph(Surv(time,event)~z1+z2,data=data1)
+zph<-cox.zph(fit,transform="rank")
+names(zph)
+fit$var
+
+
+test[j]<-zph$table[2,"p"]}
+power2<-mean(as.numeric(test<alpha))
+power2
+
+
+#######schoenfeld residuals
+
+
+library(survival)
+fit<-coxph(Surv(time,event)~z1+z2,data=data1)
+rscal<-residuals(fit,type="schoenfeld")
+scal<-rscal[,2]
+rtime<-data1$time[data1$event==1]
+mytime1<-sort(rtime)
+mytime<-rank(mytime1,ties.method="average")
+sdata<-data.frame(scal,mytime)
+fit2<-glm(scal~mytime,data=sdata)
+summary(fit2)
+pv <- summary(fit2)$coef[, "Pr(>|t|)"]
+pv
+pvalue[j]<-pv[2]}
+power3<-mean(as.numeric(pvalue<alpha))
+power3
+
+#####lin score test
+
+library(survival)
+library(KMsurv)
+library(MASS)
+fit<-coxph(Surv(time,event)~z1+z2,data=data1)
+fitd<-coxph.detail(fit)
+names(fit)
+summary(fit)
+vcov(fit)
+zph<-cox.zph(fit)
+time1<-data1$time[data1$event==1]
+time<-sort(time1)
+sch1<-residuals(fit,type="schoenfeld")
+sch<-sch1[,2]
+m<-sum(data1$event)
+H<-matrix(1,m)
+sigma<-matrix(1,nrow=m,ncol=m)
+
+for(s in 1:m){
+for(k in 1:m){ 
+if (s>=k){sigma[s,k]=time[k]}
+if(s<k){sigma[s,k]=time[s]}}}
+
+Num<-t(sch)%*%sigma%*%sch
+inv<-solve(fit$var)
+igg<-inv[2,2]
+vbb<-inv[1,1]
+ibg<-inv[1,2]
+vgg<-1/m*igg*diag(m)
+vbg<-ibg%*%t(H)
+vgb<-ibg*H
+htvgb<-t(H)%*%vgb
+vbgh<-vbg%*%H
+htvggh=t(H)%*%vgg
+htvggh=htvggh%*%H
+htvgg=t(H)%*%vgg
+m1<-matrix(c(vbb,vbgh,htvgb,htvggh),nrow=2,ncol=2)
+m2<-matrix(rbind(vbg,htvgg),nrow=2,ncol=m)
+s1<-vgg%*%H
+m3<-matrix(c(vgb,s1),nrow=m,ncol=2)
+
+wvwt<-vgg-m3%*%ginv(m1)%*%m2
+wvwtsigma<-wvwt%*%sigma
+Denom<-sum(diag(wvwtsigma%*%wvwtsigma))/sum(diag(wvwtsigma))
+score.lin<-as.numeric(Num/Denom)
+df.lin<-sum(diag(wvwtsigma))^2/sum(diag(wvwtsigma%*%wvwtsigma))
+pvalue<-pchisq(q=score.lin,df=df.lin,lower.tail=FALSE)
+p[j]<-pvalue
+}
+power4<-mean(as.numeric(p<alpha))
+power4
+
+
+####cumulative residuals
+library(survival)
+library(gof)
+
+fit.cox <- coxph(Surv(time,event) ~ z1 + z2, data=data1)
+system.time(data.gof <- cumres(fit.cox,R=1000))
+###par(mfrow=c(2,2))
+###plot(data.gof, ci=TRUE, legend=NULL)
+###summary(data.gof)
+###names(data.gof)
+pvalue[j]<-data.gof$KS[2]}
+###pvalue<-data.gof$CvM[2]
+power5<-mean(as.numeric(pvalue<alpha))
+power5
+
+
+
+
+
+
+
+
+
+
+
+
