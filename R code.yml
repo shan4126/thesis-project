@@ -1,15 +1,4 @@
-version: 2
-jobs:
-  build:
-    docker:
-      - image: circleci/ruby:2.4.1
-    steps:
-      - checkout
-      - run:
-      
-      
-      
- ### data generate
+### data generate
  simu<-500
 alpha<-0.05
 n<-500
