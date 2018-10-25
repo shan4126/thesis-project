@@ -1,0 +1,138 @@
+libname simu5 "C:\Users\shan\Desktop\New folder";
+data simu5.percent5;
+run;
+%macro boot(M);
+%do k=1 %to &M;
+
+data one;
+do n=1 to 100;
+  y1=rand('exponential',1);
+  
+  z1=rand('bernoulli',0.69);
+  z2=rand('bernoulli',0.69);
+  /*t0=2*ranuni(500);*/
+  t0=1/6;
+ 
+  r1=exp(0.057*z1+0.5*z2);
+  r2=exp(0.057*z1-0.5*z2);
+  event=1;
+   if y1<t0*r1 then t=y1/r1;
+  
+  else if y1>=t0*r1 then t=t0+(y1-t0*r1)/r2;
+  
+  cen=rand('uniform')*4;
+  if cen<t then event=0 ;
+  else event=1;
+  output;
+  end;
+  run;
+proc phreg data=one outest=est covout;
+model t*event(0)=z1 z2 ;
+output out=phres (where=(event=1)) ressch=rz1 rz2;
+run;
+
+proc sort data=phres;
+by t;
+run;
+
+proc sql;
+select sum(event) into: mm from one;
+select z1 into: vz1 from est where _NAME_='z1';
+select z2 into: vz2 from est where _NAME_='z2';
+select z1 into: cz12 from est where _NAME_='z2';
+
+quit;
+proc iml;
+use phres;
+read all variables {rz2} into s;
+read all variables {t} into time;
+mx=&mm.;
+
+vz1=&vz1.;
+vz2=&vz2.;
+cz12=&cz12.;
+print vz1 vz2 cz12;
+ins=j(2,2,.);
+ins[1,1]=vz1;
+ins[1,2]=cz12;
+ins[2,1]=cz12;
+ins[2,2]=vz2;
+invv=j(2,2,.);
+invv=inv(ins);
+igg=invv[2,2];
+vbb=invv[1,1];
+ibg=invv[1,2];
+
+H=j(mx,1);
+sigma=j(mx,mx,1);
+do j=1 to mx;
+do w=1 to mx;
+if j>=w then sigma[j,w]=time[w];
+if j<w then sigma[j,w]=time[j];
+end;
+end;
+num=s`*sigma*s;
+vgg=1/mx*igg*I(mx);
+
+vbg=j(mx,1);
+
+vgb=j(1,mx);
+vbg=ibg*H`;
+vgb=ibg*H;
+htvgb=H`*vgb;
+vbgh=vbg*H;
+htvggh=H`*vgg*H;
+htvgg=H`*vgg;
+m1=j(2,2,.);
+m1[1,1]=vbb;
+m1[1,2]=vbgh;
+m1[2,1]=htvgb;
+m1[2,2]=htvggh;
+
+m2=j(2,mx,.);
+m2=vbg//htvgg;
+x1=vgg*H;
+m3=j(mx,2,.);
+m3=vgb||x1;
+wvwt=vgg-m3*inv(m1)*m2;
+wvwtsigma=wvwt*sigma;
+denom=sum(vecdiag(wvwtsigma*wvwtsigma))/sum(vecdiag(wvwtsigma));
+scorelin=num/denom;
+x=sum(vecdiag(wvwtsigma));
+dflin=x*x/sum(vecdiag(wvwtsigma*wvwtsigma));
+pvalue=1-probchi(scorelin,dflin);
+/*ods output pvalue=p;*/
+create power5 var {p};
+append from pvalue;
+quit;
+
+proc print data=power5;
+run;
+data power5 ;
+retain k 0;
+set power5;
+
+data simu5.percent5;
+set power5 simu5.percent5;
+k = k+1;
+if k=. then delete;
+run;
+%end;
+%mend;
+%boot(1000);
+
+data power;
+set simu5.percent5;
+if p<0.05 then ind =1;
+else ind = 0;
+run;
+
+proc means data=power;
+var ind;
+output out= result mean=power;
+run;
+
+
+
+
+
