@@ -1,0 +1,70 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/ruby:2.4.1
+    steps:
+      - checkout
+      - run:
+ ### data generate
+ simu<-500
+alpha<-0.05
+n<-500
+power1<-power2<-power3<-power4<-numeric()
+test<-r_test<-numeric()
+p<-pvalue<-numeric()
+t<-y1<-y2<-z1<-z2<-cen<-array(0,n)
+event<-array(1,n)
+for(j in 1:simu){
+scal<-numeric()
+x<-y<-zz<-xx<-numeric()
+data<-function(beta1,beta2,beta3){
+y1<-rexp(n,1)
+y2<-rexp(n,1)
+z1<-rbinom(n,1,0.5)
+z2<-rbinom(n,1,0.5)
+###t0<-runif(n,0,2)
+ #### t0<-0.05
+   ###t0<-0.15
+   ###t0<-0.25
+  t0<-0.5
+   ###t0<-0.75
+  ###t0<-1
+r0<-exp(beta1*z1)
+r1<-exp(beta1*z1+beta2*z2)
+r2<-exp(beta1*z1+beta3*z2)
+I1<-as.numeric(y2<y1)
+I2<-as.numeric(y1<=y2 & y2<t0*r1+y1)
+I3<-as.numeric(y2>=t0*r1+y1)
+t<-(y1/r0)*I1+(y1+(y2-y1)/r1)*I2+(y1+t0+(y2-y1-t0*r1)/r2)*I3
+
+###cen<-runif(n,0,1)*5.7
+ #  cen<-runif(n,0,1)*4.5
+  #ceni<-as.numeric(t1<cen )
+   #t<-ceni*t1+(1-ceni)*cen
+   # event<-pevent*ceni
+    ####event<-event*as.numeric(t<5.9)
+        #event<-event*as.numeric(t<5.8)
+data1<-data.frame(time=t,event=event,z1=z1,z2=z2)}
+ data1<-data(beta1=1,beta2=5,beta3=0)
+
+
+###likelihood ratio test
+library(survival)
+library(KMsurv)
+
+alpha<-0.05
+####censorrate[j]<-1-sum(data1$event)/n
+
+fit1<-coxph(Surv(time,event)~z1+z2,data=data1)
+###fit2<-coxph(Surv(time,event)~z1+z2+z2:time,data=data1)
+fit2<-coxph(Surv(time,event)~z1+z2+tt(z2),data=data1,tt = function(x, t, ...) x * t)
+
+###names(fit1)
+zz<-fit1$loglik[2]
+xx<-fit2$loglik[2]
+test[j]<-1-pchisq(2*(xx-zz),1)}
+#####test
+power1<-mean(as.numeric(test<alpha))
+power1
+
